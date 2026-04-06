@@ -73,7 +73,7 @@ export default async function BookmarksPage() {
         <ReviewProgress reviewed={bookmarksReviewed} total={bookmarksTotal} />
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="w-full">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Collections</h1>
           <NewCollectionButton />
