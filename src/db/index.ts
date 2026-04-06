@@ -14,5 +14,5 @@ if (!global.pgPool) {
     connectionTimeoutMillis: 2_000,
   });
 }
-console.log("TEST=", process.env.TEST);
+
 export const db = drizzle(global.pgPool, { schema });
