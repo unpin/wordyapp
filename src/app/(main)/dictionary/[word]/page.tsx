@@ -143,7 +143,7 @@ export default async function WordPage({
       />
 
       <article className="max-w-7xl mx-auto my-4">
-        <header className="flex items-center gap-3 mb-8">
+        <header className="flex items-center gap-3 mb-4">
           <h1 className="text-4xl font-bold">{word}</h1>
           <TextToSpeachButton size={24} text={word} lang={lang} />
         </header>
@@ -166,7 +166,7 @@ export default async function WordPage({
               <section key={id} aria-labelledby={`sense-${id}`}>
                 <h2
                   id={`sense-${id}`}
-                  className="border-l-4 border-l-purple-400 pl-4 mb-6"
+                  className="border-l-4 border-l-purple-400 pl-4 mb-4"
                 >
                   <span className="text-2xl font-bold text-gray-700 dark:text-gray-200">
                     {abbr ?? `Meaning ${index + 1}`}
@@ -249,7 +249,7 @@ export default async function WordPage({
 
                   <div className="lg:w-2/6 flex flex-col gap-4">
                     {synonyms.length > 0 && (
-                      <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col gap-4">
+                      <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col gap-2">
                         <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
                           Synonyms
                         </h3>
@@ -269,7 +269,7 @@ export default async function WordPage({
                     )}
 
                     {see.length > 0 && (
-                      <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col gap-4">
+                      <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col gap-2">
                         <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
                           See also
                         </h3>
