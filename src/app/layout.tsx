@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./app.css";
@@ -40,6 +40,10 @@ export const metadata: Metadata = {
   },
   twitter: { card: "summary" },
   robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
