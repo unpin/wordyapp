@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 
 type ChatMessage = {
+  id: string;
   role: "user" | "assistant";
   content: string;
 };
@@ -13,7 +14,7 @@ function addMessage(
   content: string,
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>,
 ) {
-  setMessages((prev) => [...prev, { role, content }]);
+  setMessages((prev) => [...prev, { id: crypto.randomUUID(), role, content }]);
 }
 
 export default function ChatPage() {
@@ -32,7 +33,11 @@ export default function ChatPage() {
     const content = textarea.trim();
     if (!content || isLoading) return;
 
-    const userMessage: ChatMessage = { role: "user", content };
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content,
+    };
 
     setTextarea("");
     setError(null);
@@ -72,7 +77,7 @@ export default function ChatPage() {
         <ul className="border border-gray-700 rounded p-4 flex flex-col gap-2 max-h-120 overflow-y-auto">
           {messages.map((message, i) => (
             <li
-              key={i}
+              key={message.id}
               className={`${
                 message.role === "user"
                   ? "ml-auto bg-blue-400 text-white"
