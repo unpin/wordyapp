@@ -1,0 +1,81 @@
+import { and, desc, eq } from "drizzle-orm";
+import { notFound, redirect } from "next/navigation";
+import CollectionBookmarksList from "@/components/features/CollectionBookmarksList";
+import CollectionSettingsModal from "@/components/features/CollectionSettingsModal";
+import ReviewProgress from "@/components/ui/ReviewProgress";
+import { db } from "@/db";
+import { collectionBookmarks, collections } from "@/db/schema";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function CollectionPage({
+  params,
+}: PageProps<"/collection/[id]">) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { id } = await params;
+
+  const collection = await db.query.collections.findFirst({
+    where: and(eq(collections.id, id), eq(collections.ownerId, user.id)),
+  });
+
+  if (!collection) return notFound();
+
+  const collectionBookmarkRows = await db.query.collectionBookmarks.findMany({
+    where: eq(collectionBookmarks.collectionId, id),
+    with: {
+      bookmark: {
+        with: {
+          translation: {
+            columns: {
+              id: true,
+              wordId: true,
+              senseId: true,
+              lang: true,
+              text: true,
+              abbr: true,
+            },
+            with: { word: {} },
+          },
+        },
+      },
+    },
+    orderBy: desc(collectionBookmarks.createdAt),
+  });
+
+  const bookmarksTotal = collectionBookmarkRows.length;
+  const bookmarksReviewed = collectionBookmarkRows.filter(
+    (row) => row.bookmark.reviewCount > 0,
+  ).length;
+
+  return (
+    <div className="my-6 sm:my-8 mx-auto max-w-7xl flex flex-col lg:flex-row-reverse gap-6 lg:gap-8 items-start">
+      <div className="w-full lg:w-72 shrink-0 lg:sticky lg:top-8">
+        <ReviewProgress reviewed={bookmarksReviewed} total={bookmarksTotal} />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">{collection.name}</h1>
+          <CollectionSettingsModal
+            collectionId={collection.id}
+            name={collection.name}
+            description={collection.description}
+          />
+        </div>
+        <p className="text-gray-600 dark:text-gray-500 mt-1">
+          {collection.description}
+        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          {bookmarksTotal} bookmark{bookmarksTotal !== 1 ? "s" : ""}
+        </p>
+
+        <h2 className="text-xl font-bold mt-8 mb-4">Bookmarks</h2>
+        <CollectionBookmarksList initialItems={collectionBookmarkRows} />
+      </div>
+    </div>
+  );
+}
