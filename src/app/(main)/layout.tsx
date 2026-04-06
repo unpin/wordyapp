@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import BottomNav from "../../components/layout/BottomNav";
 import Header from "../../components/layout/Header";
 
 type LayoutProps = {
@@ -15,9 +16,10 @@ export default async function MainLayout({ children }: LayoutProps) {
   if (!user) redirect("/login");
 
   return (
-    <div className="p-4 bg-white dark:bg-gray-900">
+    <div className="p-4 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-4 bg-white dark:bg-gray-900">
       <Header />
       {children}
+      <BottomNav />
     </div>
   );
 }

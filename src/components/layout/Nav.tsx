@@ -19,10 +19,10 @@ export default async function Nav() {
   return (
     <nav className="flex items-center">
       <ul className="flex gap-6 items-center">
-        <li>
+        <li className="hidden md:block">
           <ThemeToggleButton />
         </li>
-        <li>
+        <li className="hidden md:block">
           <Link
             href="/practice"
             aria-label="Practice"
@@ -31,7 +31,7 @@ export default async function Nav() {
             <BarbellIcon size={24} />
           </Link>
         </li>
-        <li>
+        <li className="hidden md:block">
           <Link
             href="/bookmarks"
             aria-label="Bookmarks"
