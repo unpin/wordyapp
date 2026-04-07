@@ -75,7 +75,7 @@ export default function ChatPage() {
       <h3>AI Chatbot</h3>
       <div className="max-w-75">
         <ul className="border border-gray-700 rounded p-4 flex flex-col gap-2 max-h-120 overflow-y-auto">
-          {messages.map((message, i) => (
+          {messages.map((message) => (
             <li
               key={message.id}
               className={`${
