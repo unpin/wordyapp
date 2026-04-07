@@ -1,7 +1,14 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import LoginForm from "@/components/form/LoginForm";
+import { createClient } from "@/lib/supabase/server";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) redirect("/");
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-full max-w-sm flex flex-col gap-8">
