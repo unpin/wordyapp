@@ -57,7 +57,7 @@ export default async function CollectionPage({
         <ReviewProgress reviewed={bookmarksReviewed} total={bookmarksTotal} />
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="flex flex-col w-full">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">{collection.name}</h1>
           <CollectionSettingsModal
@@ -74,7 +74,15 @@ export default async function CollectionPage({
         </p>
 
         <h2 className="text-xl font-bold mt-8 mb-4">Bookmarks</h2>
-        <CollectionBookmarksList initialItems={collectionBookmarkRows} />
+        {collectionBookmarkRows.length === 0 ? (
+          <div className="flex items-center justify-center border border-gray-200 dark:border-gray-800 rounded-xl py-16">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              No bookmarks yet
+            </p>
+          </div>
+        ) : (
+          <CollectionBookmarksList initialItems={collectionBookmarkRows} />
+        )}
       </div>
     </div>
   );

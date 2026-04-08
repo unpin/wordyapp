@@ -129,7 +129,7 @@ export default async function BookmarksPage() {
 
         <h1 className="mt-10 mb-6 text-2xl font-bold">Bookmarks</h1>
         {bookmarkRows.length === 0 ? (
-          <div className="flex items-center justify-center border border-gray-200 dark:border-gray-800 rounded-xl py-16">
+          <div className="flex items-center justify-center border border-gray-200 dark:border-gray-800 rounded-xl py-16 w-full">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               No bookmarks yet
             </p>
