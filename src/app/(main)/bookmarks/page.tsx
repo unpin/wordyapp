@@ -53,7 +53,7 @@ export default async function BookmarksPage() {
         },
       },
       orderBy: desc(bookmarks.createdAt),
-      limit: 20,
+      limit: 21,
     }),
     db
       .select({
@@ -66,6 +66,8 @@ export default async function BookmarksPage() {
 
   const { total: bookmarksTotal, reviewed: bookmarksReviewed } =
     statsRow[0] ?? { total: 0, reviewed: 0 };
+  const initialHasMore = bookmarkRows.length > 20;
+  const initialBookmarks = bookmarkRows.slice(0, 20);
 
   return (
     <div className="my-6 sm:my-8 mx-auto max-w-7xl flex flex-col lg:flex-row-reverse gap-6 lg:gap-8 items-start">
@@ -135,7 +137,10 @@ export default async function BookmarksPage() {
             </p>
           </div>
         ) : (
-          <BookmarksList initialBookmarks={bookmarkRows} />
+          <BookmarksList
+            initialBookmarks={initialBookmarks}
+            initialHasMore={initialHasMore}
+          />
         )}
       </div>
     </div>

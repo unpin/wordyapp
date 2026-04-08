@@ -1,10 +1,10 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import CollectionBookmarksList from "@/components/features/CollectionBookmarksList";
 import CollectionSettingsModal from "@/components/features/CollectionSettingsModal";
 import ReviewProgress from "@/components/ui/ReviewProgress";
 import { db } from "@/db";
-import { collectionBookmarks, collections } from "@/db/schema";
+import { bookmarks, collectionBookmarks, collections } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function CollectionPage({
@@ -24,32 +24,43 @@ export default async function CollectionPage({
 
   if (!collection) return notFound();
 
-  const collectionBookmarkRows = await db.query.collectionBookmarks.findMany({
-    where: eq(collectionBookmarks.collectionId, id),
-    with: {
-      bookmark: {
-        with: {
-          translation: {
-            columns: {
-              id: true,
-              wordId: true,
-              senseId: true,
-              lang: true,
-              text: true,
-              abbr: true,
+  const [collectionBookmarkRows, statsRows] = await Promise.all([
+    db.query.collectionBookmarks.findMany({
+      where: eq(collectionBookmarks.collectionId, id),
+      with: {
+        bookmark: {
+          with: {
+            translation: {
+              columns: {
+                id: true,
+                wordId: true,
+                senseId: true,
+                lang: true,
+                text: true,
+                abbr: true,
+              },
+              with: { word: {} },
             },
-            with: { word: {} },
           },
         },
       },
-    },
-    orderBy: desc(collectionBookmarks.createdAt),
-  });
+      orderBy: desc(collectionBookmarks.createdAt),
+      limit: 21,
+    }),
+    db
+      .select({
+        total: sql<number>`COUNT(*)::int`,
+        reviewed: sql<number>`SUM(CASE WHEN ${bookmarks.reviewCount} > 0 THEN 1 ELSE 0 END)::int`,
+      })
+      .from(collectionBookmarks)
+      .innerJoin(bookmarks, eq(bookmarks.id, collectionBookmarks.bookmarkId))
+      .where(eq(collectionBookmarks.collectionId, id)),
+  ]);
 
-  const bookmarksTotal = collectionBookmarkRows.length;
-  const bookmarksReviewed = collectionBookmarkRows.filter(
-    (row) => row.bookmark.reviewCount > 0,
-  ).length;
+  const initialHasMore = collectionBookmarkRows.length > 20;
+  const initialItems = collectionBookmarkRows.slice(0, 20);
+  const { total: bookmarksTotal, reviewed: bookmarksReviewed } =
+    statsRows[0] ?? { total: 0, reviewed: 0 };
 
   return (
     <div className="my-6 sm:my-8 mx-auto max-w-7xl flex flex-col lg:flex-row-reverse gap-6 lg:gap-8 items-start">
@@ -74,14 +85,18 @@ export default async function CollectionPage({
         </p>
 
         <h2 className="text-xl font-bold mt-8 mb-4">Bookmarks</h2>
-        {collectionBookmarkRows.length === 0 ? (
+        {initialItems.length === 0 ? (
           <div className="flex items-center justify-center border border-gray-200 dark:border-gray-800 rounded-xl py-16">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               No bookmarks yet
             </p>
           </div>
         ) : (
-          <CollectionBookmarksList initialItems={collectionBookmarkRows} />
+          <CollectionBookmarksList
+            collectionId={id}
+            initialItems={initialItems}
+            initialHasMore={initialHasMore}
+          />
         )}
       </div>
     </div>
