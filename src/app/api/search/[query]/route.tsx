@@ -11,25 +11,43 @@ export async function GET(
   const { query: rawQuery } = await params;
   const query = decodeURIComponent(rawQuery).trim();
 
-  if (!query) return new NextResponse(JSON.stringify([]));
+  if (query.length < 2) return new NextResponse(JSON.stringify([]));
 
-  // Ranked search using pg_trgm:
-  // WHERE uses only index-compatible operators (ILIKE and % trigram op)
-  // similarity() is kept only in ORDER BY — applied to already-filtered rows
+  // Short queries (<3 chars): trigram index is ineffective
+  // prefix match uses btree index (fast), contains match is a seq scan but limited
+  if (query.length < 3) {
+    const rows = await db.execute<WordRow>(sql`
+      SELECT id, word, lang
+      FROM words
+      WHERE immutable_unaccent(word) ILIKE immutable_unaccent(${"%" + query + "%"})
+      ORDER BY
+        CASE
+          WHEN immutable_unaccent(word) ILIKE immutable_unaccent(${query})       THEN 0
+          WHEN immutable_unaccent(word) ILIKE immutable_unaccent(${query + "%"}) THEN 1
+          ELSE 2
+        END,
+        length(word)
+      LIMIT 10
+    `);
+    return new NextResponse(JSON.stringify(rows.rows));
+  }
+
+  // Longer queries: use GIN trigram index via % operator and ILIKE
+  // similarity() only in ORDER BY — applied to already-filtered rows
   const rows = await db.execute<WordRow>(sql`
     SELECT id, word, lang
     FROM words
     WHERE
-      word ILIKE ${"%" + query + "%"}
-      OR word % ${query}
+      immutable_unaccent(word) ILIKE immutable_unaccent(${"%" + query + "%"})
+      OR immutable_unaccent(word) % immutable_unaccent(${query})
     ORDER BY
       CASE
-        WHEN word ILIKE ${query}             THEN 0
-        WHEN word ILIKE ${query + "%"}       THEN 1
-        WHEN word ILIKE ${"%" + query + "%"} THEN 2
+        WHEN immutable_unaccent(word) ILIKE immutable_unaccent(${query})             THEN 0
+        WHEN immutable_unaccent(word) ILIKE immutable_unaccent(${query + "%"})       THEN 1
+        WHEN immutable_unaccent(word) ILIKE immutable_unaccent(${"%" + query + "%"}) THEN 2
         ELSE 3
       END,
-      similarity(word, ${query}) DESC
+      similarity(immutable_unaccent(word), immutable_unaccent(${query})) DESC
     LIMIT 10
   `);
 

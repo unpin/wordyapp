@@ -40,7 +40,7 @@ export default function SearchBar() {
   useEffect(() => {
     const trimmed = query.trim();
 
-    if (!trimmed) {
+    if (trimmed.length < 2) {
       setIsLoading(false);
       setData([]);
       return;
