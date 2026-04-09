@@ -52,6 +52,8 @@ export const words = pgTable(
   (table) => [
     index("words_word_idx").on(table.word),
     uniqueIndex("words_word_lang_idx").on(table.word, table.lang),
+    // GIN trigram index for fuzzy/contains search — see migration 0005_trgm_search.sql
+    index("words_word_trgm_idx").using("gin", table.word),
   ],
 );
 
