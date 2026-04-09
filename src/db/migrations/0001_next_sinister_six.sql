@@ -1,0 +1,1 @@
+ALTER TABLE "bookmarks" RENAME COLUMN "reviewCount" TO "review_count";

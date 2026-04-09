@@ -1,1 +1,0 @@
-ALTER TABLE "senses" ALTER COLUMN "ref_id" SET DATA TYPE text;
