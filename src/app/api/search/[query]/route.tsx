@@ -14,20 +14,18 @@ export async function GET(
   if (!query) return new NextResponse(JSON.stringify([]));
 
   // Ranked search using pg_trgm:
-  // 0 — exact match
-  // 1 — prefix match  (vorb… → vorbei…)
-  // 2 — contains match (vorbeikommen → an etw. vorbeikommen)
-  // 3 — trigram similarity (typos, partial tokens)
+  // WHERE uses only index-compatible operators (ILIKE and % trigram op)
+  // similarity() is kept only in ORDER BY — applied to already-filtered rows
   const rows = await db.execute<WordRow>(sql`
     SELECT id, word, lang
     FROM words
     WHERE
       word ILIKE ${"%" + query + "%"}
-      OR similarity(word, ${query}) > 0.15
+      OR word % ${query}
     ORDER BY
       CASE
-        WHEN word ILIKE ${query}           THEN 0
-        WHEN word ILIKE ${query + "%"}     THEN 1
+        WHEN word ILIKE ${query}             THEN 0
+        WHEN word ILIKE ${query + "%"}       THEN 1
         WHEN word ILIKE ${"%" + query + "%"} THEN 2
         ELSE 3
       END,
