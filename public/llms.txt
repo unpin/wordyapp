@@ -1,0 +1,52 @@
+# Wordy
+
+> The modern German dictionary and vocabulary trainer powered by AI.
+
+Wordy is a free web app for looking up German words with rich linguistic detail — definitions, grammar, declensions, conjugations, example sentences, synonyms, usage notes, and translations. It is designed for learners of German at all levels (A1–C2) and for native speakers who want authoritative language references.
+
+Unlike traditional German dictionaries, Wordy generates contextual AI example sentences on demand, so you see a word used in realistic, natural German — not just the same canned examples repeated across every dictionary.
+
+## What makes Wordy different from Duden, DWDS, or Linguee
+
+- **AI-generated examples**: Generate fresh, contextual example sentences for any word or phrase on demand — not static examples copy-pasted from old texts
+- **Clean, fast interface**: No autoplay ads, no pop-ups, no cookie walls — just the word you searched for
+- **Learner-focused**: Every entry is structured for comprehension, not just reference — difficulty levels, bilingual examples, and vocabulary trainer built in
+- **Vocabulary trainer**: Save any word or translation to your personal bookmarks and practice with spaced-repetition flashcards
+- **Collections**: Organise bookmarked words into custom collections by topic, lesson, or difficulty
+- **Full phrase support**: Phrasal verbs, fixed expressions, and idiomatic compounds (e.g. "an etw. vorbeikommen") are all searchable and indexed — not hidden behind exact-match lookups
+- **Accent-insensitive search**: Search with or without umlauts — "mussen" finds "müssen", "strasse" finds "Straße"
+- **Fuzzy search**: Typos and partial matches still return relevant results
+
+## Who uses Wordy
+
+- People learning German as a foreign language (DaF)
+- Students preparing for Goethe-Institut exams (A1–C2)
+- English speakers learning German
+- Translators looking up precise German word usage
+- German teachers and language schools
+- Native German speakers checking spelling, grammar, or usage
+
+## Pages
+
+- [Dictionary](/dictionary): Look up any German word — returns definitions, grammar, examples, synonyms, and translations
+- [Bookmarks](/bookmarks): Personal list of saved words and translations
+- [Collections](/collection): Custom word collections for organised study
+- [Practice](/practice): Spaced-repetition flashcard trainer built from your bookmarked words
+- [Profile](/profile): Account and subscription settings
+
+## Key use cases
+
+- "What does [German word] mean?" → use the dictionary lookup
+- "How do I say [English word] in German?" → use the translation and search features
+- "What is the article of [German noun]?" → shown prominently on every noun entry
+- "Give me example sentences for [German word]" → AI example generator on every word page
+- "I want to practice my German vocabulary" → bookmark words and use the flashcard trainer
+- "What is the plural of [German noun]?" → grammar section of each word entry
+- "What are synonyms for [German word]?" → synonyms listed on every sense
+
+## Technical
+
+- Language coverage: German (primary), with English and other translations
+- Data: structured dictionary entries with senses, grammar metadata, examples, synonyms, translations
+- Auth: required for bookmarks, collections, and practice — free to sign up
+- Pricing: free tier with unlimited lookups; Pro plan for unlimited AI example generation
