@@ -4,17 +4,19 @@ import { db } from "@/db";
 
 type WordRow = { id: string; word: string; lang: string };
 
+const PAGE_SIZE = 10;
+
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: RouteContext<"/api/search/[query]">,
 ) {
   const { query: rawQuery } = await params;
   const query = decodeURIComponent(rawQuery).trim();
 
-  if (query.length < 2) return new NextResponse(JSON.stringify([]));
+  if (query.length < 2) return NextResponse.json({ results: [], hasMore: false });
 
-  // Short queries (<3 chars): trigram index is ineffective
-  // prefix match uses btree index (fast), contains match is a seq scan but limited
+  const offset = Math.max(0, Number(req.nextUrl.searchParams.get("offset")) || 0);
+
   if (query.length < 3) {
     const rows = await db.execute<WordRow>(sql`
       SELECT id, word, lang
@@ -27,13 +29,12 @@ export async function GET(
           ELSE 2
         END,
         length(word)
-      LIMIT 10
+      LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}
     `);
-    return new NextResponse(JSON.stringify(rows.rows));
+    const hasMore = rows.rows.length > PAGE_SIZE;
+    return NextResponse.json({ results: rows.rows.slice(0, PAGE_SIZE), hasMore });
   }
 
-  // Longer queries: use GIN trigram index via % operator and ILIKE
-  // similarity() only in ORDER BY — applied to already-filtered rows
   const rows = await db.execute<WordRow>(sql`
     SELECT id, word, lang
     FROM words
@@ -48,8 +49,9 @@ export async function GET(
         ELSE 3
       END,
       similarity(immutable_unaccent(word), immutable_unaccent(${query})) DESC
-    LIMIT 10
+    LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}
   `);
 
-  return new NextResponse(JSON.stringify(rows.rows));
+  const hasMore = rows.rows.length > PAGE_SIZE;
+  return NextResponse.json({ results: rows.rows.slice(0, PAGE_SIZE), hasMore });
 }

@@ -12,70 +12,112 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import Button from "../ui/Button";
 
-// FIX 2: typed the data state so TypeScript knows the shape of each result.
-// Before it was useState([]) which is typed as never[], causing implicit any errors.
 type WordResult = { id: string; word: string };
+
+const PAGE_SIZE = 10;
 
 export default function SearchBar() {
   const [query, setQuery] = useState("");
   const [data, setData] = useState<WordResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState(0);
+
   const pathname = usePathname();
-
   const searchRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const offsetRef = useRef(0);
+  const queryRef = useRef("");
 
-  const handleClickOutside = useCallback(() => {
-    setIsOpen(false);
-  }, []);
-
+  const handleClickOutside = useCallback(() => setIsOpen(false), []);
   useClickOutside(searchRef, handleClickOutside);
 
-  // FIX 3: pathname is intentionally used only as a trigger, not in the body.
   // biome-ignore lint/correctness/useExhaustiveDependencies: pathname triggers close on navigation
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
 
+  const fetchResults = useCallback(
+    async (q: string, off: number, signal: AbortSignal) => {
+      const res = await fetch(
+        `/api/search/${encodeURIComponent(q)}?offset=${off}`,
+        { signal },
+      );
+      return res.json() as Promise<{ results: WordResult[]; hasMore: boolean }>;
+    },
+    [],
+  );
+
+  // Initial search — fires on query change with debounce
   useEffect(() => {
     const trimmed = query.trim();
 
     if (trimmed.length < 2) {
       setIsLoading(false);
       setData([]);
+      setHasMore(false);
+      setOffset(0);
       return;
     }
 
     const controller = new AbortController();
-    const { signal } = controller;
 
-    const delayDebounceFn = setTimeout(() => {
-      // FIX 1: moved setIsLoading(true) inside the timeout so the spinner only
-      // appears after the debounce delay, not on every keystroke. Before this,
-      // the spinner would flash briefly on each character the user typed.
+    const timer = setTimeout(() => {
       setIsLoading(true);
+      queryRef.current = trimmed;
+      offsetRef.current = 0;
 
-      fetch(`/api/search/${encodeURIComponent(trimmed)}`, {
-        signal,
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setData(data);
+      fetchResults(trimmed, 0, controller.signal)
+        .then(({ results, hasMore }) => {
+          setData(results);
+          setHasMore(hasMore);
+          setOffset(PAGE_SIZE);
           setIsOpen(true);
           setIsLoading(false);
         })
-        .catch((error) => {
-          if (error.name !== "AbortError") {
-            setIsLoading(false);
-          }
+        .catch((err) => {
+          if (err.name !== "AbortError") setIsLoading(false);
         });
     }, 300);
 
     return () => {
       controller.abort();
-      clearTimeout(delayDebounceFn);
+      clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, fetchResults]);
+
+  // Load next page and append
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+    const q = queryRef.current;
+    const off = offsetRef.current;
+
+    setIsLoadingMore(true);
+    try {
+      const { results, hasMore: more } = await fetchResults(q, off, new AbortController().signal);
+      setData((prev) => [...prev, ...results]);
+      setHasMore(more);
+      offsetRef.current = off + PAGE_SIZE;
+      setOffset((o) => o + PAGE_SIZE);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMore, fetchResults]);
+
+  // Infinite scroll via IntersectionObserver on sentinel
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { threshold: 1.0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   return (
     <div ref={searchRef} className="relative">
@@ -91,15 +133,9 @@ export default function SearchBar() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          // FIX 4: only reopen the dropdown on focus if there are already results.
-          // Before, focusing the input always set isOpen to true even with no data,
-          // which was a no-op visually but left state in an inconsistent condition.
           onFocus={() => data.length > 0 && setIsOpen(true)}
           className="grow h-14 outline-0 min-w-0"
           placeholder="Stichwort"
-          // FIX 5: role="combobox" belongs on the input — it's the focusable element.
-          // Putting it on the wrapper div was wrong because divs aren't focusable.
-          // aria-expanded and aria-controls wire it up to the results list below.
           role="combobox"
           aria-label="Search for a word"
           aria-expanded={isOpen && data.length > 0}
@@ -115,15 +151,14 @@ export default function SearchBar() {
           </Button>
         )}
       </div>
-      {/* FIX 5: role="listbox" and option go on divs, not ul/li.
-          Biome rejects interactive roles on non-interactive HTML elements like
-          ul and li. Using divs here lets us keep the ARIA semantics correctly. */}
+
       <div
         id="search-results"
         role="listbox"
         aria-hidden={!isOpen || data.length === 0}
         className={[
-          "absolute top-full mt-4 w-full bg-white dark:bg-gray-800 rounded-md overflow-hidden",
+          "absolute top-full mt-4 w-full bg-white dark:bg-gray-800 rounded-md",
+          "max-h-96 overflow-y-auto",
           "transition duration-300 ease-out border border-gray-200 dark:border-gray-700 z-10",
           isOpen && data.length > 0
             ? "opacity-100 translate-y-0 pointer-events-auto visible"
@@ -147,6 +182,15 @@ export default function SearchBar() {
             </Link>
           </div>
         ))}
+
+        {/* Sentinel for IntersectionObserver — invisible, triggers loadMore on scroll */}
+        {hasMore && <div ref={sentinelRef} className="h-1" />}
+
+        {isLoadingMore && (
+          <div className="flex justify-center py-3 text-gray-400">
+            <CircleNotchIcon size={18} className="animate-spin" />
+          </div>
+        )}
       </div>
     </div>
   );
